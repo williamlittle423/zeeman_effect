@@ -16,6 +16,7 @@ m_peaks = [[0,1,3,4], [0,2,4,5], [0,3,6,9], [0,3,6,9], [0,3,6,9], [0,3,6,9], [1,
 def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -35, h_center = 675):
     intensity_peaks = []
     mean_diffs = []
+    total_count = 0
     
     for i in range(num_files):
         file_name = file_pattern.format(i)
@@ -88,9 +89,9 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
         reveresed_peaks = reveresed_peaks[::-1]
 
         differences = [abs(peaks[i] - reveresed_peaks[i]) for i in range(len(peaks))]
+        total_count += len(differences)
 
-        print('Differences:', differences)
-        print('Mean Difference:', np.mean(np.array(differences)))
+        print(f'Mean Difference of image {i}:', np.mean(np.array(differences)))
         mean_diffs.append(np.mean(np.array(differences)))
         
         # Plot the intensity values
@@ -117,7 +118,11 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
         
         intensity_peaks.append(peaks)
         
+    print('Total Count:', total_count)
+    print('Standard Deviation:', np.std(np.array(mean_diffs)))
+
     return mean_diffs, np.mean(np.array(mean_diffs))
+
 
 differences, mean_difference = process_image()
 
