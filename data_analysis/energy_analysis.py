@@ -17,10 +17,13 @@ B_err = 100; I_err = 0.025
 
 lambda_0 = 585e-9  #m
 h = 6.626e-34   #J/Hz
-c = 3e8   #m/s^2
+c = 3e8   #m/s
 t = 0.01 #1 cm
 g = 1
 mu_B = 9.274e-24    #J/T
+m = 3   #peak of interest
+
+print(f"Parameters: \n h = {h} J*s \n c = {c} m/s \n t = {t} m \n g = {g} \n m = {m} \n")
 
 def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -35, h_center = 675):
     intensity_peaks = []; mean_diffs = []
@@ -217,27 +220,23 @@ def plot_BvsI (B_err, I_err):
     plt.savefig('current_vs_magnetic_field.png')
     plt.show()
     
-    return a,b,hyst_err,y_err
+    return a, b, hyst_err, y_err, sig_a, sig_b
 
 
 intensity_peaks = process_image()
 
 intensity_slope, intensity_intercept, average_slope, average_intercept, slope_err, intercept_err = find_slope_R_difference(intensity_peaks, peak_err)
 
-print("m vs. R^2 average slope, intercept:", average_slope, average_intercept)
-print("slope, intercept error:", slope_err, intercept_err, "\n")
+print(f"R^2 = ({average_slope} +/- {slope_err}) * m + ({average_intercept} +/- {intercept_err}) \n")
 
-B_slope, B_intercept, hyst_err, B_calc_err =  plot_BvsI(B_err, I_err)
+B_slope, B_intercept, hyst_err, B_calc_err, B_slope_err, B_intercept_err =  plot_BvsI(B_err, I_err)
 
-print("B vs I params:", B_slope, B_intercept)
-print("hystersis error:", hyst_err)
-print("calculated B error:", np.mean(B_calc_err), '\n')
-
+print(f"B = ({B_slope} +/- {B_slope_err}) * I + ({B_intercept} +/- {B_intercept_err})")
+print("Hystersis error:", hyst_err)
+print("Calculated B error:", np.mean(B_calc_err), '\n')
 
 
 #m = 3 peak 
-m = 3
-
 delta_R = []
 I = np.linspace(0, 0.8, num_files)
 
@@ -276,8 +275,8 @@ dR_exp = a * I + b
 #plot I values
 plt.errorbar(I, delta_R, xerr=I_err, yerr=sig_dR, fmt='k.')
 plt.plot(I, dR_exp, 'r')
-plt.xlabel('I (A)'); plt.ylabel('$\Delta$R$^2$')
-plt.title('$\Delta$R$^2$ over I for m=3')
+plt.xlabel('I (A)'); plt.ylabel('$\u0394$R$^2$')
+plt.title('$\u0394$R$^2$ over I for m=3')
 plt.savefig('m=3_I_vs_deltaR^2.png')
 plt.show()
 
@@ -299,8 +298,8 @@ dL_exp = a * B + b
 plt.errorbar(B, delta_lambda, xerr=B_err, yerr=sig_dL, fmt='k.')
 #plt.plot(B, delta_lambda, 'o')
 plt.plot(B, dL_exp, 'r')
-plt.xlabel('B (T)'); plt.ylabel('$\Delta \lambda$ (nm)')
-plt.title('$\Delta \lambda$ over B for m=3')
+plt.xlabel('B (T)'); plt.ylabel('\u0394 \u03BB (nm)')
+plt.title('\u0394 \u03BB over B for m=3')
 plt.savefig('m=3_B_vs_deltaL.png')
 plt.show()
 
@@ -320,18 +319,16 @@ dE_exp = a * B + b
 plt.errorbar(B, delta_E, xerr=B_err, yerr=sig_E, fmt='k.')
 #plt.plot(B, delta_E, 'k.')
 plt.plot(B, dE_exp, 'r')
-plt.xlabel('B (T)'); plt.ylabel('${\Delta}$E (J)')
-plt.title('$\Delta$E over B for m=3')
+plt.xlabel('B (T)'); plt.ylabel('$\u0394$E (J)')
+plt.title('$\u0394$E over B for m=3')
 plt.savefig('m=3_B_vs_deltaE.png')
 plt.show()
 
-print("B vs E params:", a, b, "\n")
+print(f"\u0394E = ({a} +/- {sig_a}) * B + (b +/- {sig_b}) \n")
 print("Bohr magneton:", a, "+/-", sig_a)
 
 print("Percent error:", abs((a-mu_B)/mu_B)*100, "%")
 
 within_err = a < mu_B < (a+sig_a) or a > mu_B > (a-sig_a)
 
-print("Falls within error: ", within_err)
-
-
+print(f"Falls within error: {within_err}")
