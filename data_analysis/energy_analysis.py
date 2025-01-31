@@ -18,6 +18,9 @@ B_err = 100; I_err = 0.025
 lambda_0 = 585e-9  #m
 h = 6.626e-34   #J/Hz
 c = 3e8   #m/s^2
+t = 0.01 #2 cm
+g = 1
+mu_B = 9.274e-24    #J/T
 
 def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -35, h_center = 675):
     intensity_peaks = []
@@ -85,18 +88,17 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
         plt.title('Vertical Line Pixel Intensity in Centre of Image')
         for p in peaks:
             plt.axvline(x=p, color='red', linestyle='--')
-        plt.xlabel('Pixel Position (Y)')
-        plt.ylabel('Intensity Value')
+        plt.xlabel('Pixel Position (Y)'); plt.ylabel('Intensity Value')
         plt.grid()
-        plt.show()
-        plt.savefig('intensity_trial{}.jpg'.format(i)) '''
+        plt.savefig('intensity_trial{}.jpg'.format(i))
+        plt.show() '''
         
         intensity_peaks.append(peaks)
         
     return intensity_peaks
 
 def find_slope(peak, peak_err, split_indices=split_indices, m_peaks=m_peaks, num_files=num_files):
-    a_params = []; b_params = []
+    a_params = []; b_params = []; sig_a = []; sig_b = []
     plt.figure(figsize=(10,8))
 
     #remove the split level peaks
@@ -116,7 +118,10 @@ def find_slope(peak, peak_err, split_indices=split_indices, m_peaks=m_peaks, num
         x = np.array(X); y = np.array(Y)
         
         #find the slope of the m vs. R^2 data
-        a,b = np.polyfit(x,y,1)
+        p,cov = np.polyfit(x,y,1, cov=True)
+        a=p[0]; b=p[1]
+        sig_a.append(np.sqrt(cov[0][0])); sig_b .append(np.sqrt(cov[1][1]))
+        
         y_est = a * x + b
         
         for j in range(len(peak[i])):
@@ -131,15 +136,18 @@ def find_slope(peak, peak_err, split_indices=split_indices, m_peaks=m_peaks, num
         
     #finding average and standard deviation
     average_slope = np.mean(a_params); average_intercept = np.mean(b_params)
-    slope_err = np.std(a_params); intercept_err = np.std(b_params)
+    slope_err = np.mean(sig_a); intercept_err = np.mean(sig_b)
+    #np.std(a_params); intercept_err = np.std(b_params)
     
     m = np.array([1,2,3,4])
     plt.plot(m, average_slope*m+average_intercept, label ='average', linestyle = 'dashed', color = 'k')
-    plt.xlabel('m')
-    plt.ylabel('R $^2$')
+    plt.plot(m, (average_slope+slope_err)*m+(average_intercept), 'b')
+    plt.plot(m, (average_slope-slope_err)*m+(average_intercept), 'b')
+    plt.xlabel('m'); plt.ylabel('R $^2$')
     plt.title('Distance between m level relationship')
-    plt.legend(); plt.show()
+    plt.legend()
     plt.savefig('R2_vs_m.jpg')
+    plt.show()
     
     return a_params, b_params, average_slope, average_intercept, slope_err, intercept_err
 
@@ -162,99 +170,13 @@ def plot_BvsI (B_err, I_err):
     plt.plot(I, a*np.array(I) + b, 'b-', label='Linear fit y = {:.5f}x - {:.2f}'.format(a,-b))
     plt.errorbar(I, B, yerr=B_err, xerr=I_err, fmt='k.', label='Experimental Data')
 
-    plt.ylabel('Magnetic Field (Gauss)')
-    plt.xlabel('Current (Amps)')
+    plt.ylabel('Magnetic Field (Gauss)'); plt.xlabel('Current (Amps)')
     plt.title('Magnetic vs Current Field')
-    plt.legend(); plt.show()
+    plt.legend()
     plt.savefig('current_vs_magnetic_field.png')
+    plt.show()
     
     return a,b,hyst_err,y_err
-
-def m_line_current_vs_delta_R(B_slope, B_intercept, B_err, average_slope, slope_err, I_err=I_err, lambda_0=lambda_0):
-    #m = 3 peak 
-    m = 3
-    delta_R = []
-    I = np.linspace(0, 0.8, num_files)
-
-    plt.figure()
-    
-    #find values of m=3 and slpit lines
-    for i in range(num_files):
-        if i in (10,11,12,13,14,15,16):
-            for j in range(len(intensity_peaks[i])):
-                if j in m_peaks[i-8]:
-                    if (m_peaks[i-8].index(j)+1 == m):
-                        left_split = intensity_peaks[i][j-1]
-                        m_line = intensity_peaks[i][j]
-                        right_split = intensity_peaks[i][j+1]
-                        dR = ((abs(left_split-m_line) + abs(right_split-m_line))/2)**2
-                        
-        elif i in (8, 9):
-            for j in range(len(intensity_peaks[i])):
-                if j in m_peaks[i-8]:
-                    if (m_peaks[i-8].index(j)+1 == m):
-                        left_split = intensity_peaks[i][j-1]
-                        m_line = intensity_peaks[i][j]
-                        dR = (left_split-m_line)**2
-        else:
-            dR = 0
-        
-        delta_R.append(dR)
-
-    #remove zero values
-    delta_R = delta_R[8:]; I = I[8:]
-    sig_dR = 2*np.sqrt(delta_R)*peak_err
-
-    #linear fit
-    a,b = np.polyfit(I,delta_R,1)
-    dR_exp = a * I + b
-
-    #plot I values
-    plt.errorbar(I, delta_R, xerr=I_err, yerr=sig_dR, fmt='k.')
-    plt.plot(I, dR_exp, 'r')
-    plt.xlabel('I (A)')
-    plt.ylabel('${\Delta}$R$^2$')
-    plt.title('${\Delta}$R$^2$ over I for m=3')
-    plt.show()
-    plt.savefig('m=3_I_vs_deltaR^2.png')
-    
-    #convert to B
-    B = B_slope*I + B_intercept; 
-    #linear fit
-    a,b = np.polyfit(B,delta_R,1)
-    dR_exp = a * B + b
-
-    #plot B values
-    plt.errorbar(B, delta_R, xerr=B_err, yerr=sig_dR, fmt='k.')
-    plt.plot(B, dR_exp, 'r')
-    plt.xlabel('B (G)')
-    plt.ylabel('${\Delta}$R$^2$')
-    plt.title('${\Delta}$R$^2$ over B for m=3')
-    plt.show()
-    plt.savefig('m=3_B_vs_deltaR^2.png')
-    
-    
-    delta_R = np.array(delta_R); average_slope = np.array(average_slope)
-    #convert to delta lambda
-    delta_lambda = (lambda_0*delta_R)/(m*average_slope);
-    
-    sig_dL = np.sqrt((sig_dR*(2*lambda_0*np.sqrt(delta_R))/(m*average_slope))**2 + (slope_err * (lambda_0*delta_R)/(m*average_slope**2))**2)
-    
-    #linear fit
-    a,b = np.polyfit(B,delta_lambda,1)
-    dL_exp = a * B + b
-    
-    #plot delta lambda values
-    #plt.errorbar(B, delta_lambda, xerr=B_err, yerr=sig_dL, fmt='k.')
-    plt.plot(B, delta_lambda, 'o')
-    plt.plot(B, dL_exp, 'r')
-    plt.xlabel('B (G)')
-    plt.ylabel('${\Delta \lambda}$')
-    plt.title('${\Delta \lambda}$ over B for m=3')
-    plt.show()
-    plt.savefig('m=3_B_vs_deltaL.png')
-    
-    return a,b
 
 
 intensity_peaks = process_image()
@@ -270,13 +192,99 @@ print("B vs I params:", B_slope, B_intercept)
 print("hystersis error:", hyst_err)
 print("calculated B error:", np.mean(B_calc_err), '\n')
 
-deltaR_slope, deltaR_intercept = m_line_current_vs_delta_R(B_slope, B_intercept, np.mean(B_calc_err), average_slope, slope_err)
-
-print("m = 3 params:", deltaR_slope, deltaR_intercept)
 
 
+#m = 3 peak 
+m = 3
 
+delta_R = []
+I = np.linspace(0, 0.8, num_files)
 
+plt.figure()
+#find values of m=3 and slpit lines
+for i in range(num_files):
+    if i in (10,11,12,13,14,15,16):
+        for j in range(len(intensity_peaks[i])):
+            if j in m_peaks[i-8]:
+                if (m_peaks[i-8].index(j)+1 == m):
+                    left_split = intensity_peaks[i][j-1]**2
+                    m_line = intensity_peaks[i][j]**2
+                    right_split = intensity_peaks[i][j+1]**2
+                    dR = right_split-left_split
+                    
+    elif i in (8, 9):
+        for j in range(len(intensity_peaks[i])):
+            if j in m_peaks[i-8]:
+                if (m_peaks[i-8].index(j)+1 == m):
+                    left_split = intensity_peaks[i][j-1]**2
+                    m_line = intensity_peaks[i][j]**2
+                    dR = (m_line-left_split)*2
+    else:
+        dR = 0
+    
+    delta_R.append(dR)
 
+#remove zero values
+delta_R = delta_R[8:]; I = I[8:]
+sig_dR = 2*np.sqrt(delta_R)*peak_err
 
+#linear fit
+a,b = np.polyfit(I,delta_R,1)
+dR_exp = a * I + b
 
+#plot I values
+plt.errorbar(I, delta_R, xerr=I_err, yerr=sig_dR, fmt='k.')
+plt.plot(I, dR_exp, 'r')
+plt.xlabel('I (A)'); plt.ylabel('$\Delta$R$^2$')
+plt.title('$\Delta$R$^2$ over I for m=3')
+plt.savefig('m=3_I_vs_deltaR^2.png')
+plt.show()
+
+#convert to B
+B = B_slope*I + B_intercept
+
+delta_R = np.array(delta_R)
+#convert to delta lambda
+delta_lambda = lambda_0*delta_R/average_slope
+
+sig_dL = np.sqrt((sig_dR*lambda_0/average_slope)**2 + (slope_err * delta_R*lambda_0/(average_slope**2))**2)
+
+B = B*10**(-4); B_err = B_err*10**(-4)
+#linear fit
+a,b = np.polyfit(B,delta_lambda,1)
+dL_exp = a * B + b
+
+#plot delta lambda values
+plt.errorbar(B, delta_lambda, xerr=B_err, yerr=sig_dL, fmt='k.')
+#plt.plot(B, delta_lambda, 'o')
+plt.plot(B, dL_exp, 'r')
+plt.xlabel('B (T)'); plt.ylabel('$\Delta \lambda$ (nm)')
+plt.title('$\Delta \lambda$ over B for m=3')
+plt.savefig('m=3_B_vs_deltaL.png')
+plt.show()
+
+#convert to delta E
+delta_E = g*h*c*delta_lambda/(2*t*lambda_0)
+
+sig_E = g*h*c*sig_dL/(2*t*lambda_0)
+
+#linear fit
+p,cov = np.polyfit(B,delta_E,1, cov=True)
+a=p[0]; b=p[1]
+sig_a = np.sqrt(cov[0][0]); sig_b = np.sqrt(cov[1][1])
+
+dE_exp = a * B + b
+
+#plot delta E values
+plt.errorbar(B, delta_E, xerr=B_err, yerr=sig_E, fmt='k.')
+#plt.plot(B, delta_E, 'k.')
+plt.plot(B, dE_exp, 'r')
+plt.xlabel('B (T)'); plt.ylabel('${\Delta}$E (J)')
+plt.title('$\Delta$E over B for m=3')
+plt.savefig('m=3_B_vs_deltaE.png')
+plt.show()
+
+print("B vs E params:", a, b, "\n")
+print("Bohr magneton:", a, "+/-", sig_a)
+
+print("percent error:", abs((a-mu_B)/mu_B)*100, "%")
