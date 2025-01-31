@@ -23,7 +23,8 @@ g = 1
 mu_B = 9.274e-24    #J/T
 
 def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -35, h_center = 675):
-    intensity_peaks = []
+    intensity_peaks = []; mean_diffs = []
+    total_count = 0
     
     for i in range(num_files):
         file_name = file_pattern.format(i)
@@ -64,40 +65,80 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
         plt.axvline(cropped_image.shape[1] // 2)
         plt.axhline(y=h_center)
         plt.title(f'rotate image {i}')
+        plt.savefig(f'line_of_intensity_{i}.jpg')
         plt.show() '''
         
         #get the intensity of middle column (vertical line)
         intensity = cropped_image[h_center:, cropped_image.shape[1] // 2]
+        reveresed_intensity = intensity[::-1]
         
-        #find the peaks of the intensity plots
         peaks, _ = find_peaks(intensity, width = 10, distance = 40, prominence=5)
+        reversed_peaks, _ = find_peaks(reveresed_intensity, width = 10, distance = 40, prominence=5)
         peaks = list(peaks)
+        reveresed_peaks = list(reversed_peaks)
+
+        #change the reversed_peaks back to the original orientation
+        reveresed_peaks = [len(intensity) - p for p in reveresed_peaks]
         
-        #remove peaks on the fringe
+        #remove fringe values
         j = 0
         while j < len(peaks):
             if (peaks[j] < 475 or peaks[j] > 1900):
                 peaks.pop(j)
             else: 
                 j +=1
+
+        j = 0
+        while j < len(reveresed_peaks):
+            if (reveresed_peaks[j] < 475 or reveresed_peaks[j] > 1900):
+                reveresed_peaks.pop(j)
+            else: 
+                j +=1
+
+        reveresed_peaks = reveresed_peaks[::-1]
+
+        differences = [abs(peaks[i] - reveresed_peaks[i]) for i in range(len(peaks))]
+        total_count += len(differences)
+
+        mean_diffs.append(np.mean(np.array(differences)))
         
-        '''
         #plot the intensity values
         plt.figure()
         plt.plot(intensity, 'k.')
-        plt.title('Vertical Line Pixel Intensity in Centre of Image')
-        for p in peaks:
-            plt.axvline(x=p, color='red', linestyle='--')
+        plt.title('Forward and Reverse Peaks of Intensity Profile to Zeeman Lines')
+        for k, p in enumerate(peaks):
+            if k == 0:
+                plt.axvline(x=p, color='red', linestyle='--', label='Forward Peaks')
+            else:
+                plt.axvline(x=p, color='red', linestyle='--')
+        for k, p in enumerate(reveresed_peaks):
+            if k == 0:
+                plt.axvline(x=p, color='blue', linestyle='--', label='Reverse Peaks')
+            else:
+                plt.axvline(x=p, color='blue', linestyle='--')
         plt.xlabel('Pixel Position (Y)'); plt.ylabel('Intensity Value')
-        plt.grid()
-        plt.savefig('intensity_trial{}.jpg'.format(i))
-        plt.show() '''
+        plt.grid();plt.legend()
+        plt.savefig(f'forward_reverse_peaks_{i}.png', dpi=300)
+        
         
         intensity_peaks.append(peaks)
         
+    print('Total Count:', total_count)
+    print('Standard Deviation:', np.std(np.array(mean_diffs)), "\n")
+    
+    #plot a histogram of differences
+    plt.figure()
+    plt.hist(mean_diffs, bins=10)
+    plt.axvline(x=np.mean(np.array(mean_diffs)), color='red', linestyle='--', label='Mean Difference = {:.2f} pixels'.format(np.mean(np.array(mean_diffs))))
+    plt.title('Histogram of Differences Between Forward and Reverse Peaks')
+    plt.xlabel('Pixel Difference'); plt.ylabel('Frequency')
+    plt.grid(); plt.legend()
+    plt.savefig('histogram_differences.png', dpi=300)
+    
     return intensity_peaks
+        
 
-def find_slope(peak, peak_err, split_indices=split_indices, m_peaks=m_peaks, num_files=num_files):
+def find_slope_R_difference(peak, peak_err, split_indices=split_indices, m_peaks=m_peaks, num_files=num_files):
     a_params = []; b_params = []; sig_a = []; sig_b = []
     plt.figure(figsize=(10,8))
 
@@ -141,8 +182,8 @@ def find_slope(peak, peak_err, split_indices=split_indices, m_peaks=m_peaks, num
     
     m = np.array([1,2,3,4])
     plt.plot(m, average_slope*m+average_intercept, label ='average', linestyle = 'dashed', color = 'k')
-    plt.plot(m, (average_slope+slope_err)*m+(average_intercept), 'b')
-    plt.plot(m, (average_slope-slope_err)*m+(average_intercept), 'b')
+    plt.plot(m, (average_slope+slope_err)*m+(average_intercept), label = 'error',linestyle = 'dashed', color = 'b')
+    plt.plot(m, (average_slope-slope_err)*m+(average_intercept), linestyle = 'dashed', color = 'b')
     plt.xlabel('m'); plt.ylabel('R $^2$')
     plt.title('Distance between m level relationship')
     plt.legend()
@@ -181,7 +222,7 @@ def plot_BvsI (B_err, I_err):
 
 intensity_peaks = process_image()
 
-intensity_slope, intensity_intercept, average_slope, average_intercept, slope_err, intercept_err = find_slope(intensity_peaks, peak_err)
+intensity_slope, intensity_intercept, average_slope, average_intercept, slope_err, intercept_err = find_slope_R_difference(intensity_peaks, peak_err)
 
 print("m vs. R^2 average slope, intercept:", average_slope, average_intercept)
 print("slope, intercept error:", slope_err, intercept_err, "\n")
@@ -287,4 +328,10 @@ plt.show()
 print("B vs E params:", a, b, "\n")
 print("Bohr magneton:", a, "+/-", sig_a)
 
-print("percent error:", abs((a-mu_B)/mu_B)*100, "%")
+print("Percent error:", abs((a-mu_B)/mu_B)*100, "%")
+
+within_err = a < mu_B < (a+sig_a) or a > mu_B > (a-sig_a)
+
+print("Falls within error: ", within_err)
+
+
