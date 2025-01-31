@@ -18,7 +18,7 @@ B_err = 100; I_err = 0.025
 lambda_0 = 585e-9  #m
 h = 6.626e-34   #J/Hz
 c = 3e8   #m/s^2
-t = 0.01 #2 cm
+t = 0.01 #1 cm
 g = 1
 mu_B = 9.274e-24    #J/T
 
