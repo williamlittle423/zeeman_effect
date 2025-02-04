@@ -123,7 +123,7 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
                 plt.axvline(x=p, color='blue', linestyle='--')
         plt.xlabel('Pixel Position (Y)'); plt.ylabel('Intensity Value')
         plt.grid();plt.legend()
-        plt.savefig(f'forward_reverse_peaks_{i}.png', dpi=300)
+        #plt.savefig(f'forward_reverse_peaks_{i}.png', dpi=300)
         
         
         intensity_peaks.append(peaks)
@@ -138,7 +138,7 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
     plt.title('Histogram of Differences Between Forward and Reverse Peaks')
     plt.xlabel('Pixel Difference'); plt.ylabel('Frequency')
     plt.grid(); plt.legend()
-    plt.savefig('histogram_differences.png', dpi=300)
+    #plt.savefig('histogram_differences.png', dpi=300)
     
     return intensity_peaks
         
@@ -192,7 +192,7 @@ def find_slope_R_difference(peak, peak_err, split_indices=split_indices, m_peaks
     plt.xlabel('m'); plt.ylabel('R $^2$')
     plt.title('Distance between m level relationship')
     plt.legend()
-    plt.savefig('R2_vs_m.jpg')
+    #('R2_vs_m.jpg')
     plt.show()
     
     return a_params, b_params, average_slope, average_intercept, slope_err, intercept_err
@@ -219,7 +219,7 @@ def plot_BvsI (B_err, I_err):
     plt.ylabel('Magnetic Field (Gauss)'); plt.xlabel('Current (Amps)')
     plt.title('Magnetic vs Current Field')
     plt.legend()
-    plt.savefig('current_vs_magnetic_field.png')
+    #plt.savefig('current_vs_magnetic_field.png')
     plt.show()
     
     return a, b, hyst_err, y_err, sig_a, sig_b
@@ -279,7 +279,7 @@ plt.errorbar(I, delta_R, xerr=I_err, yerr=sig_dR, fmt='k.')
 plt.plot(I, dR_exp, 'r')
 plt.xlabel('I (A)'); plt.ylabel('$\u0394$R$^2$')
 plt.title('$\u0394$R$^2$ over I for m=3')
-plt.savefig('m=3_I_vs_deltaR^2.png')
+#plt.savefig('m=3_I_vs_deltaR^2.png')
 plt.show()
 
 #convert to B
@@ -302,7 +302,7 @@ plt.errorbar(B, delta_lambda, xerr=B_err, yerr=sig_dL, fmt='k.')
 plt.plot(B, dL_exp, 'r')
 plt.xlabel('B (T)'); plt.ylabel('\u0394 \u03BB (nm)')
 plt.title('\u0394 \u03BB over B for m=3')
-plt.savefig('m=3_B_vs_deltaL.png')
+#plt.savefig('m=3_B_vs_deltaL.png')
 plt.show()
 
 #convert to delta E
@@ -323,7 +323,7 @@ plt.errorbar(B, delta_E, xerr=B_err, yerr=sig_E, fmt='k.')
 plt.plot(B, dE_exp, 'r')
 plt.xlabel('B (T)'); plt.ylabel('$\u0394$E (J)')
 plt.title('$\u0394$E over B for m=3')
-plt.savefig('m=3_B_vs_deltaE.png')
+#plt.savefig('m=3_B_vs_deltaE.png')
 plt.show()
 
 print(f"\u0394E = ({a} +/- {sig_a}) * B + (b +/- {sig_b}) \n")
