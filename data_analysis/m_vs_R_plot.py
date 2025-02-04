@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.signal import find_peaks
-from sklearn.metrics import root_mean_squared_error
 from scipy.stats import chisquare
 import os
 import matplotlib.ticker as ticker
+
 
 num_files = 17
 
@@ -118,14 +118,6 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
     print(f'Standard Deviation: {np.std(np.array(mean_diffs)):.2f} \n')
     
     return intensity_peaks
-        
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import chisquare
-
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import chisquare
 
 def red_chi_sq(y_obs, y_exp):
     chi = chisquare(y_obs, y_exp)[0]
