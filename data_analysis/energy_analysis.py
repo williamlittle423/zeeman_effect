@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.signal import find_peaks
 from sklearn.metrics import root_mean_squared_error
+import os
 
 num_files = 17
 
@@ -31,6 +32,7 @@ def process_image(file_pattern='pattern_{}.jpg', num_files=num_files, angle = -3
     
     for i in range(num_files):
         file_name = file_pattern.format(i)
+        file_name = os.path.join('images', file_name)
         image = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
         
         #crop the top 20% of the image
