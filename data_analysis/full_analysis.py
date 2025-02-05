@@ -281,11 +281,12 @@ def plot_BvsI (B_err, I_err):
     hyst_err = root_mean_squared_error(B_tot, a*np.array(I_tot) + b)
     
     #plotting
+    plt.figure(figsize=(8,6))
     plt.errorbar(I_up, B_up, yerr=B_err, xerr=I_err, fmt='b.', label='Up Data')
     plt.errorbar(I_down, B_down, yerr=B_err, xerr=I_err, fmt='r.', label='Down Data')
     plt.plot(I_tot, a*np.array(I_tot) + b, 'k-', label='B = ({:.2f} \u00b1 {:f})e04 * I + ({:.2f} \u00b1 {:.2f})e02'.format(a*10**(-4),sig_a*10**(-4),b*10**(-2),sig_b*10**(-2)))
     plt.legend(frameon=False, loc = 'upper left')
-    plt.annotate("$\u03c7_\u03bd^2$ = {:.2f}".format(red_chi_sq(B_tot, a*np.array(I_tot) + b, B_err)), (-0.03, .83*max(B_tot)))
+    plt.annotate("$\u03c7_\u03bd^2$ = {:.2f}".format(red_chi_sq(B_tot, a*np.array(I_tot) + b, B_err)), (-0.03, .87*max(B_tot)))
     plt.ylabel('Magnetic Field (G)'); plt.xlabel('Current (A)')
     plt.savefig('current_vs_magnetic_field.jpg', dpi=300)
     plt.show()
