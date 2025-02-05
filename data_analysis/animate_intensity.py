@@ -4,6 +4,7 @@ import os
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
+from scipy.signal import find_peaks
 
 # Global parameters
 num_files = 17
@@ -101,23 +102,31 @@ def init():
     return line,
 
 def animate(frame):
-    """
-    Update the plot for the frame index 'frame'.
-    """
+    ax.cla()  # Clear the current axes
+    # Redraw static elements
+    ax.grid(True)
+    ax.set_xlabel('Pixel Position')
+    ax.set_ylabel('Pixel Intensity')
     intensity = intensity_profiles[frame]
     if intensity.size == 0:
-        # If the intensity profile is empty, show a blank plot.
         x = []
         y = []
     else:
         x = np.arange(len(intensity))
         y = intensity
 
-    line.set_data(x, y)
-    ax.set_title(f'Intensity Profile (Image {frame})')
-    # Optionally adjust xlim to fit the data:
-    ax.set_xlim(0, max(500, len(intensity)))
-    return line,
+    peaks, _ = find_peaks(y, width=10, distance=40, prominence=5)
+    # Plot the intensity profile
+    ax.plot(x, y, 'k.', markersize=3)
+    # Plot the peaks
+    for p in peaks:
+        ax.axvline(x=p, color='red', linestyle='--', alpha=0.5)
+    
+    ax.set_title(f'm=3 Intensity Profile (Image {frame})')
+    ax.set_xlim(1200, 1570)
+    ax.set_ylim(0, 170)
+    return ax.lines
+
 
 # Create the animation.
 anim = FuncAnimation(fig, animate, init_func=init,
